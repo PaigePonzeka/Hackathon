@@ -1,0 +1,30 @@
+﻿#canvas-wrapper {
+	width: 500px;
+	margin: 0 auto;
+}
+body {
+	padding: 0;
+}
+.canvas-key {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: auto;
+	height: 100px;
+}
+
+ul {
+	list-style: none;
+}
+
+	ul li {
+		margin: 5px 0;
+	}
+
+.key {
+	border: 1px solid #ccc;
+	width: 10px;
+	height: 10px;
+	float: left;
+	margin: 5px 5px 5px 0;
+}

@@ -1,0 +1,154 @@
+﻿@{
+	Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>Background Process Manager Manager</title>
+		<link rel="stylesheet" href="~/Styles/isotope.css" />
+	</head>
+	<body>
+		<h1>Background Process Manager <em>Manager</em></h1>
+		<h2><em>Assistant to the Background Process Manager</em></h2>
+
+		<div id="content" class="variable-sizes">
+			
+			<div id="container"></div>
+			
+			<div class="column">
+				<h3>Sort By</h3>
+				<ul id="sort-by" class="option-set clearfix" data-option-key="sortBy">
+					<li><a href="#" data-option-value="name">name</a></li>
+					<li><a href="#" data-option-value="longestRunning">longest running</a></li>
+				</ul>
+			</div>
+
+			<div class="column">
+				<h3>Filter By</h3>
+				<ul id="filters">
+					<li><a href="#" data-filter="*" style="color: #FB4;">show all</a></li>
+				</ul>
+			</div>
+			
+			<ul id="messages" style="display: none;"></ul>
+		</div>
+		<script src="Scripts/jquery-1.8.3.min.js" type="text/javascript"></script>
+		<script src="Scripts/jquery.signalR-1.0.0-alpha2.min.js" type="text/javascript"></script>
+		<script src="Scripts/jquery.isotope.min.js" type="text/javascript"></script>
+		<script src="Scripts/prettyDate.js" type="text/javascript"></script>
+		<script src="signalr/hubs" type="text/javascript"></script>
+		<script type="text/javascript">
+			var backgroundProcessHub = $.connection.backgroundProcessHub,
+				$container = $('#container'),
+				$messages = $('#messages'),
+				classNames = [];
+			
+			backgroundProcessHub.client.addJob = function (jobMessage) {
+				var $li = $('<li />'),
+					$div = $('<div />');
+
+				$li.text(jobMessage.JobType + ' - ' + jobMessage.Status);
+				$li.attr('id', 'li-' + jobMessage.JobInstanceId);
+				$li.attr('data-created-at', jobMessage.EventTime);
+				
+				var $time = $('<p class="number"/>');
+				$time.attr('title', jobMessage.EventTime);
+				//$time.text(parseDate(jobMessage.EventTime).toString());
+
+				var $h2 = $('<h2 class="name" />').text(jobMessage.JobType);
+				
+				$div.attr('id', jobMessage.JobInstanceId);
+				$div.addClass('element');
+				$div.addClass('width2 height2');
+				$div.addClass(jobMessage.JobType);
+				$div.attr('data-jobType', jobMessage.JobType);
+
+				var classN = 't' + jobMessage.JobType.replace(/ /g, "");
+				$div.addClass(classN);
+
+				$div.append($time);
+				$div.append($h2);
+				$div.attr('data-created-at', jobMessage.EventTime);
+				
+				$messages.append($li);
+				//$container.append($div);
+				$container.isotope('insert', $div);
+				
+				if ($.inArray(classN, classNames) < 0) {
+					classNames.push(classN);
+					var $newFilter = $('<li><a href="#" data-filter=".' + classN + '" class="' + classN + '">' + jobMessage.JobType + '</a></li>');
+
+					$('#filters').append($newFilter);
+				}
+			};
+			
+			backgroundProcessHub.client.removeJob = function (jobMessage) {
+				var $li = $('#li-' + jobMessage.JobInstanceId);
+
+				$li.fadeOut(1000, function() {
+					$li.remove();
+				});
+
+				var $div = $('#' + jobMessage.JobInstanceId);
+
+				//$div.fadeOut(1000, function () {
+				//	$div.remove();
+				//});
+				$container.isotope('remove', $div);
+			};
+			
+			backgroundProcessHub.client.clearAllJobs = function () {
+				$messages.children().fadeOut(1000, function () {
+					$(this).remove();
+				});
+
+				$container.isotope('remove', $container.children());
+			};
+			
+			$.connection.hub.start();
+			
+			$container.isotope({
+				itemSelector: '.element',
+				getSortData: {
+					name: function ($elem) {
+						return $elem.find('.name').text();
+					},
+					longestRunning: function ($elem) {
+						var theDate = parseDate($elem.find('.number').attr('title'));
+						var ticks = ((theDate.getTime() * 10000) + 621355968000000000);
+						return ticks;
+					}
+				},
+				masonry: {
+					columnWidth: 130
+				}
+			});
+			
+			$('#content').on('click', '#sort-by a', function () {
+				// get href attribute, minus the '#'
+				var sortName = $(this).data('option-value');
+				$container.isotope({ sortBy: sortName });
+
+				$('#sort-by a').removeClass('active');
+				$(this).addClass('active');
+
+				return false;
+			});
+			
+			$('#content').on('click', '#filters a', function () {
+				var selector = $(this).attr('data-filter');
+				$container.isotope({ filter: selector });
+				
+				$('#filters a').removeClass('active');
+				$(this).addClass('active');
+
+				return false;
+			});
+			
+			$(".number").prettyDate();
+			setInterval(function () { $(".number").prettyDate(); }, 1000);
+		</script>
+	</body>
+</html>
